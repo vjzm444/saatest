@@ -2,8 +2,21 @@
 @using AppBase;
 @inject HttpClient Http
 @inject NavigationManager NavManager
-<div class="container mt-4">
-    <h3 class="mb-4 text-primary">SAA 실전 문제 (CSV 데이터 로드)</h3>
+@inject IJSRuntime JSRuntime
+
+<div class="container-fluid mt-4">
+    @* 상단 컨트롤 바: 사이드바 토글 및 5번 이동 버튼 *@
+    <div class="d-flex justify-content-between align-items-center mb-4 sticky-top bg-white py-2 shadow-sm px-3" style="z-index: 1020; top: 0;">
+        <h3 class="mb-0 text-primary">SAA 실전 문제</h3>
+        <div class="d-flex align-items-center">
+            @* 문제 번호 입력창 *@
+            <div class="input-group" style="width: 200px;">
+                <input type="number" class="form-control" placeholder="문제 번호" 
+                       @bind="jumpTarget" @onkeyup="HandleKeyUp" />
+                <button class="btn btn-primary" @onclick="JumpToQuestion">이동</button>
+            </div>
+        </div>
+    </div>
 
     @if (questions == null)
     {
@@ -14,9 +27,11 @@
     }
     else
     {
+        int listCount = 1;
         @foreach (var q in questions)
         {
-            <div class="card mb-4 shadow-sm border-@(q.IsSubmitted ? (q.SelectedKey == q.CorrectKey ? "success" : "danger") : "secondary")">
+            @* 각 문제 카드에 ID 부여 *@
+            <div id="question-@listCount" class="card mb-4 shadow-sm border-@(q.IsSubmitted ? (q.SelectedKey == q.CorrectKey ? "success" : "danger") : "secondary")">
                 <div class="card-body">
                     <h5 class="card-title">Q@(q.Id). @q.Title</h5>
 
@@ -56,12 +71,34 @@
                     </div>
                 </div>
             </div>
+            listCount++;
         }
     }
 </div>
 
 @code {
-    // 1. 데이터 모델 정의 (나중에 Entity Framework Core 엔티티로 확장 가능)
+
+    private int jumpTarget; // 입력받은 문제 번호
+
+    // 엔터키 누르면 바로 이동하게 처리
+    private async Task HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await JumpToQuestion();
+        }
+    }
+
+    // 입력된 번호로 스크롤 이동
+    private async Task JumpToQuestion()
+    {
+        if (jumpTarget > 0)
+        {
+            // 리스트 카운트 기반 ID: "question-5" 형식으로 호출
+            await JSRuntime.InvokeVoidAsync("scrollToElement", $"question-{jumpTarget}");
+        }
+    }
+
     public class QuestionModel
     {
         public int Id { get; set; }
@@ -69,22 +106,17 @@
         public Dictionary<string, string> Options { get; set; } = new();
         public string CorrectKey { get; set; } = "";
         public string Explanation { get; set; } = "";
-
-        // UI 상태 관리용 (DB에는 저장 안 함)
         public string SelectedKey { get; set; } = "";
         public bool IsSubmitted { get; set; } = false;
     }
 
     private List<QuestionModel>? questions;
 
-
     protected override async Task OnInitializedAsync()
     {
-        // CSV 파일 읽기 (wwwroot 기준 경로)
-        // CsvLoadTest.razor 내 수정
         var absoluteUri = NavManager.ToAbsoluteUri("data/questions.csv").ToString();
         var csvData = await Http.GetStringAsync(absoluteUri);
-        var lines = csvData.Split('\n').Skip(1); // 헤더 제외
+        var lines = csvData.Split('\n').Skip(1);
 
         questions = new List<QuestionModel>();
 
@@ -92,7 +124,10 @@
         {
             if (string.IsNullOrWhiteSpace(line)) continue;
 
+            // 파이썬에서 따옴표 없이 추출했으므로 단순 Split 가능
             var cols = line.Split(',');
+            if (cols.Length < 8) continue;
+
             questions.Add(new QuestionModel
                 {
                     Id = int.Parse(cols[0]),
@@ -100,19 +135,19 @@
                     Options = new Dictionary<string, string> {
                     { "A", cols[2] }, { "B", cols[3] }, { "C", cols[4] }, { "D", cols[5] }
                 },
-                    CorrectKey = cols[6],
+                    CorrectKey = cols[6].Trim(), // CorrectKey 한 글자만 추출
                     Explanation = cols[7]
                 });
         }
-        var logger = ConfigurationHelper.GetLogger<CsvLoadTest>();
-        logger.LogInformation($"갯수: {questions.Count()}");
     }
-    
-    private void ResetQuestion(QuestionModel q)
+
+    // 스크롤 이동 함수 (JS 호출)
+    private async Task ScrollToQuestion(string elementId)
     {
-        q.SelectedKey = "";
-        q.IsSubmitted = false;
+        await JSRuntime.InvokeVoidAsync("scrollToElement", elementId);
     }
+
+    private void ResetQuestion(QuestionModel q) => (q.SelectedKey, q.IsSubmitted) = ("", false);
 
     private string GetOptionClass(QuestionModel q, string key)
     {
@@ -121,5 +156,4 @@
         if (q.SelectedKey == key && key != q.CorrectKey) return "list-group-item-danger";
         return "";
     }
-
 }
