@@ -1,0 +1,280 @@
+QUESTION NO: 1
+회사의 소프트웨어 개발 팀에는 Amazon RDS 다중 AZ 클러스터가 필요합니다. RDS
+클러스터는 온프레미스에 배포된 데스크톱 클라이언트의 백엔드 역할을 합니다. 데스크톱
+클라이언트에는 RDS 클러스터에 대한 직접 연결이 필요합니다.
+회사는 개발팀이 사무실에 있을 때 클라이언트를 사용하여 클러스터에 연결할 수 있는 기능을
+제공해야 합니다.
+필요한 연결을 가장 안전하게 제공하는 솔루션은 무엇입니까?
+A. VPC 1개와 퍼블릭 서브넷 2개를 생성합니다. 퍼블릭 서브넷에 RDS 클러스터를
+생성합니다. 회사 사무실에서 고객 게이트웨이와 함께 AWS Site-to-Site VPN을
+사용하십시오.
+B. VPC와 프라이빗 서브넷 2개를 생성합니다. 프라이빗 서브넷에 RDS 클러스터를
+생성합니다. 회사 사무실에서 고객 게이트웨이와 함께 AWS Site-to-Site VPN을
+사용하십시오.
+C. VPC와 프라이빗 서브넷 2개를 생성합니다. 프라이빗 서브넷에 RDS 클러스터를
+생성합니다. RDS 보안 그룹을 사용하여 회사의 사무실 IP 범위가 클러스터에 액세스하도록
+허용합니다.
+D. VPC 1개와 퍼블릭 서브넷 2개를 생성합니다. 퍼블릭 서브넷에 RDS 클러스터를
+생성합니다. 각 개발자에 대해 클러스터 사용자를 만듭니다. RDS 보안 그룹을 사용하여
+사용자가 클러스터에 액세스하도록 허용합니다.
+Answer: B
+Explanation:
+Requirement Analysis: Need secure, direct connectivity from an on-premises client to an
+RDS cluster, accessible only when in the office.
+VPC with Private Subnets: Ensures the RDS cluster is not publicly accessible, enhancing
+security. Site-to-Site VPN: Provides secure, encrypted connection between on-premises
+office and AWS VPC.
+Implementation:
+Create a VPC with two private subnets.
+Launch the RDS cluster in the private subnets.
+Set up a Site-to-Site VPN connection with a customer gateway in the office. Conclusion: This
+setup ensures secure and direct connectivity with minimal exposure, meeting the requirement
+for secure access from the office.
+QUESTION NO: 2
+소셜 미디어 회사는 사용자 프로필, 관계 및 상호 작용에 대한 데이터베이스를 AWS
+클라우드에 저장하려고 합니다. 회사에는 데이터베이스의 변경 사항을 모니터링하는
+애플리케이션이 필요합니다. 애플리케이션은 데이터 엔터티 간의 관계를 분석하고
+사용자에게 권장 사항을 제공해야 합니다.
+최소한의 운영 오버헤드로 이러한 요구 사항을 충족하는 솔루션은 무엇입니까?
+A. Amazon Neptune을 사용하여 정보를 저장합니다. Amazon Kinesis Data Streams를
+사용하여 데이터베이스의 변경 사항을 처리합니다.
+B. Amazon Neptune을 사용하여 정보를 저장합니다. Neptune Streams를 사용하여
+데이터베이스의 변경 사항을 처리합니다.
+C. Amazon Quantum Ledger Database(Amazon QLDB)를 사용하여 정보를 저장합니다
+Amazon Kinesis Data Streams를 사용하여 데이터베이스의 변경 사항을 처리합니다.
+D. Amazon Quantum Ledger Database(Amazon QLDB)를 사용하여 정보를 저장합니다.
+Neptune Streams를 사용하여 데이터베이스의 변경 사항을 처리합니다.
+Answer: B
+Explanation:
+Amazon Neptune: Neptune is a fully managed graph database service that is optimized for
+storing and querying highly connected data. It supports both property graph and RDF graph
+models, making it suitable for applications that need to analyze relationships between data
+entities. Neptune Streams: Neptune Streams captures changes to the graph and streams
+these changes to other AWS services. This is useful for applications that need to monitor and
+respond to changes in real-time, such as providing recommendations based on user
+interactions and relationships. Least Operational Overhead: Using Neptune Streams directly
+with Amazon Neptune ensures that the solution is tightly integrated, reducing the need for
+additional components and minimizing operational overhead. This integration simplifies the
+architecture by eliminating the need for a separate service like Kinesis for change
+processing.
+QUESTION NO: 3
+한 회사는 Amazon S3 버킷을 데이터 레이크 스토리지 플랫폼으로 사용합니다. S3 버킷에는
+여러 팀과 수백 개의 애플리케이션에서 무작위로 액세스하는 엄청난 양의 데이터가 포함되어
+있습니다. 회사는 S3 스토리지 비용을 절감하고 자주 액세스하는 객체에 대한 즉각적인
+가용성을 제공하고자 합니다. 이러한 요구 사항을 충족하는 가장 운영 효율적인 솔루션은
+무엇입니까?
+A. 객체를 S3 Intelligent-Tiering 스토리지 클래스로 전환하는 S3 수명 주기 규칙을
+생성합니다.
+B. Amazon S3 Glacier에 객체를 저장합니다. S3 Select를 사용하여 애플리케이션에 데이터에
+대한 액세스 권한을 제공합니다.
+C. S3 스토리지 클래스 분석의 데이터를 사용하여 객체를 S3 Standard-Infrequent Access(S3
+Standard-IA) 스토리지 클래스로 자동 전환하는 S3 수명 주기 규칙을 생성합니다.
+D. S3 Standard-Infrequent Access(S3 Standard-IA) 스토리지 클래스로 객체 전환
+애플리케이션에서 객체에 액세스할 때 객체를 S3 Standard 스토리지 클래스로 전환하는
+AWS Lambda 함수를 생성합니다.
+Answer: A
+Explanation:
+Amazon S3 Intelligent-Tiering: This storage class is designed to optimize costs by
+automatically moving data between two access tiers (frequent and infrequent) when access
+patterns change. It provides cost savings without performance impact or operational
+overhead. S3 Lifecycle Rules:
+By creating an S3 Lifecycle rule, the company can automatically transition objects to the
+Intelligent-Tiering storage class. This eliminates the need for manual intervention and
+ensures that objects are moved to the most cost-effective storage tier based on their access
+patterns.
+Operational Efficiency: Intelligent-Tiering requires no additional management and delivers
+immediate availability for frequently accessed objects. This makes it the most operationally
+efficient solution for the given requirements.
+QUESTION NO: 4
+회사는 재생성할 수 없는 많은 파일을 생성하는 애플리케이션에 대해 Amazon S3 스토리지
+비용을 최적화해야 합니다. 각 파일은 약 5MB이며 Amazon S3 표준 스토리지에 저장됩니다.
+회사는 파일을 삭제하기 전에 4년 동안 파일을 저장해야 합니다. 파일에 즉시 액세스할 수
+있어야 합니다. 파일은 객체 생성 후 처음 30일 동안 자주 액세스되지만 처음 30일 이후에는
+거의 액세스되지 않습니다.
+이러한 요구 사항을 가장 비용 효율적으로 충족하는 솔루션은 무엇입니까?
+A. 객체 생성 후 30일 후에 파일을 S3 Glacier Instant Retrieval로 이동하는 S3 수명 주기
+정책을 생성합니다. 객체 생성 후 4년이 지나면 파일을 삭제합니다.
+B. 객체 생성 후 30일 후에 파일을 S3 One Zone-Infrequent Access(S3 One Zone-IA)로
+이동하는 S3 수명 주기 정책을 생성합니다. 객체 생성 후 4년이 지나면 파일을 삭제합니다.
+C. 객체 생성 후 30일 후에 파일을 S3 Standard-Infrequent Access(S3 Standard-IA)로
+이동하는 S3 수명 주기 정책을 생성합니다. 객체 생성 후 4년이 지나면 파일을 삭제합니다.
+D. 객체 생성 후 30일 후에 파일을 S3 Standard-Infrequent Access(S3 Standard-IA)로
+이동하는 S3 수명 주기 정책을 생성합니다. 객체 생성 후 4년이 지나면 파일을 S3 Glacier
+유연한 검색으로 이동합니다.
+Answer: C
+Explanation:
+Amazon S3 Standard-IA: This storage class is designed for data that is accessed less
+frequently but requires rapid access when needed. It offers lower storage costs compared to
+S3 Standard while still providing high availability and durability.
+Access Patterns: Since the files are frequently accessed in the first 30 days and rarely
+accessed afterward, transitioning them to S3 Standard-IA after 30 days aligns with their
+access patterns and reduces storage costs significantly.
+Lifecycle Policy: Implementing a lifecycle policy to transition the files to S3 Standard-IA
+ensures automatic management of the data lifecycle, moving files to a lower-cost storage
+class without manual intervention. Deleting the files after 4 years further optimizes costs by
+removing data that is no longer needed.
+QUESTION NO: 5
+회사는 VPC의 프라이빗 서브넷에서 AWS Lambda 함수를 실행합니다. 서브넷에는 Amazon
+EC2 NAT 인스턴스를 통해 인터넷으로 연결되는 기본 경로가 있습니다. Lambda 함수는 입력
+데이터를 처리하고 해당 출력을 Amazon S3에 객체로 저장합니다.
+NAT 인스턴스 네트워크의 트래픽 포화로 인해 객체를 업로드하려고 시도하는 동안
+간헐적으로 Lambda 함수 시간이 초과됩니다. 회사는 인터넷을 통과하지 않고 Amazon S3에
+액세스하려고 합니다.
+어떤 솔루션이 이러한 요구 사항을 충족합니까?
+A. EC2 NAT 인스턴스를 AWS 관리형 NAT 게이트웨이로 교체합니다.
+B. VPC의 EC2 NAT 인스턴스 크기를 네트워크 최적화 인스턴스 유형으로 늘립니다.
+C. VPC에서 Amazon S3에 대한 게이트웨이 엔드포인트를 프로비저닝합니다. 그에 따라
+서브넷의 라우팅 테이블을 업데이트합니다.
+D. 전송 게이트웨이를 프로비저닝합니다. Lambda 함수가 실행 중인 프라이빗 서브넷에 전송
+게이트웨이 연결을 배치합니다.
+Answer: C
+Explanation:
+Gateway Endpoint for Amazon S3: A VPC endpoint for Amazon S3 allows you to privately
+connect your VPC to Amazon S3 without requiring an internet gateway, NAT device, VPN
+connection, or AWS Direct Connect connection.
+Provisioning the Endpoint:
+Navigate to the VPC Dashboard.
+Select "Endpoints" and create a new endpoint.
+Choose the service name for S3 (com.amazonaws.region.s3).
+Select the appropriate VPC and subnets.
+Adjust the route tables of the subnets to include the new endpoint. Update Route Tables:
+Modify the route tables of the subnets to direct traffic destined for S3 to the newly created
+endpoint. This ensures that traffic to S3 does not go through the NAT instance, avoiding the
+saturated network and eliminating timeouts. Operational Efficiency: This solution minimizes
+operational overhead by removing dependency on the NAT instance and avoiding internet
+traffic, leading to more stable and secure S3 interactions.
+QUESTION NO: 6
+회사는 하이브리드 네트워크 아키텍처를 설계해야 합니다. 회사의 워크로드는 현재 AWS
+클라우드와 온프레미스 데이터 센터에 저장되어 있습니다. 워크로드의 통신을 위해 한 자릿수
+지연 시간이 필요합니다. 회사는 AWS Transit Gateway 전송 게이트웨이를 사용하여 여러
+VPC를 연결합니다. 어떤 조합을 사용합니까? 단계 중 가장 비용 효율적으로 이러한 요구
+사항을 충족할 수 있는 단계는 무엇입니까? (2개를 선택하세요.)
+A. 각 VPC에 대한 AWS Site-to-Site VPN 연결을 설정합니다.
+B. AWS Direct Connect 게이트웨이를 VPC에 연결된 전송 게이트웨이와 연결합니다.
+C. AWS Direct Connect 게이트웨이에 대한 AWS Site-to-Site VPN 연결을 설정합니다.
+D. AWS Direct Connect 연결을 설정합니다. Direct Connect 게이트웨이에 대한 VIF(전송 가상
+인터페이스)를 생성합니다.
+E. AWS Site-to-Site VPN 연결을 VPC에 연결된 전송 게이트웨이와 연결합니다.
+Answer: BD
+Explanation:
+AWS Direct Connect: Provides a dedicated network connection from your on-premises data
+center to AWS, ensuring low latency and consistent network performance.
+Direct Connect Gateway Association:
+Direct Connect Gateway: Acts as a global network transit hub to connect VPCs across
+different AWS regions.
+Association with Transit Gateway: Enables communication between on-premises data
+centers and multiple VPCs connected to the transit gateway.
+Transit Virtual Interface (VIF):
+Create Transit VIF: To connect Direct Connect with a transit gateway.
+Setup Steps:
+Establish a Direct Connect connection.
+Create a transit VIF to the Direct Connect gateway.
+Associate the Direct Connect gateway with the transit gateway attached to the VPCs.
+Cost Efficiency: This combination avoids the recurring costs and potential performance
+variability of VPN connections, providing a robust, low-latency hybrid network solution.
+QUESTION NO: 7
+회사는 Amazon RDS 데이터베이스를 기반으로 하는 Amazon EC2에서 매우 민감한
+애플리케이션을 실행하고 있습니다. 규정 준수 규정에 따라 모든 개인 식별 정보(Pll)는 저장
+시 암호화되어야 합니다.
+인프라에 대한 변경 사항을 최소화하면서 이 요구 사항을 충족하기 위해 솔루션 설계자는
+어떤 솔루션을 권장해야 합니까?
+A. AWS Certificate Manager를 배포하여 인증서 생성 인증서를 사용하여 데이터베이스 볼륨
+암호화
+B. AWS CloudHSM을 배포합니다. 암호화 키를 생성하고 해당 키를 사용하여 데이터베이스
+볼륨을 암호화합니다.
+C. AWS Key Management Service {AWS KMS) 키를 사용하여 SSL 암호화를 구성하여
+데이터베이스 볼륨을 암호화합니다.
+D. 인스턴스 및 데이터베이스 볼륨을 암호화하도록 AWS KMS(AWS Key Management
+Service) 키를 사용하여 Amazon Elastic Block Store(Amazon EBS) 암호화 및 Amazon RDS
+암호화를 구성합니다.
+Answer: D
+Explanation:
+EBS Encryption:
+Default EBS Encryption: Can be enabled for new EBS volumes. Use of AWS KMS: Specify
+AWS KMS keys to handle encryption and decryption of data transparently.
+Amazon RDS Encryption:
+RDS Encryption: Encrypts the underlying storage for RDS instances using AWS KMS.
+Configuration: Enable encryption when creating the RDS instance or modify an existing
+instance to enable encryption.
+Least Amount of Changes:
+Both EBS and RDS support seamless encryption with AWS KMS, requiring minimal changes
+to the existing infrastructure.
+Enables compliance with regulatory requirements without modifying the application.
+Operational Efficiency: Using AWS KMS for both EBS and RDS ensures a consistent,
+managed approach to encryption, simplifying key management and enhancing security.
+QUESTION NO: 8
+글로벌 전자 상거래 회사는 AWS에서 중요한 워크로드를 실행합니다. 워크로드는 다중 AZ
+배포용으로 구성된 PostgreSQL DB 인스턴스용 Amazon RDS를 사용합니다.
+회사에서 데이터베이스 장애 조치가 발생할 때 고객이 애플리케이션 시간 초과를
+보고했습니다. 회사에는 장애 조치 시간을 줄이기 위해 탄력적인 솔루션이 필요합니다. 어떤
+솔루션이 이러한 요구 사항을 충족합니까?
+A. Amazon RDS 프록시를 생성합니다. DB 인스턴스에 프록시를 할당합니다.
+B. DB 인스턴스에 대한 읽기 전용 복제본을 생성합니다. 읽기 트래픽을 읽기 전용 복제본으로
+이동합니다.
+C. 성능 개선 도우미를 활성화합니다. CPU 로드를 모니터링하여 시간 초과를 식별합니다.
+D. 정기적인 자동 스냅샷 생성 자동 스냅샷을 여러 AWS 리전에 복사
+Answer: A
+Explanation:
+Amazon RDS Proxy: RDS Proxy is a fully managed, highly available database proxy that
+makes applications more resilient to database failures by pooling and sharing connections,
+and it can automatically handle database failovers.
+Reduced Failover Time: By using RDS Proxy, the connection management between the
+application and the database is improved, reducing failover times significantly. RDS Proxy
+maintains connections in a connection pool and reduces the time required to re-establish
+connections during a failover.
+Configuration:
+Create an RDS Proxy instance.
+Configure the proxy to connect to the RDS for PostgreSQL DB instance. Modify the
+application configuration to use the RDS Proxy endpoint instead of the direct database
+endpoint.
+Operational Benefits: This solution provides high availability and reduces application timeouts
+during failovers with minimal changes to the application code.
+QUESTION NO: 9
+한 회사가 Amazon Aurora PostgreSQL Serverless v2 클러스터에 애플리케이션을 배포할
+계획입니다. 애플리케이션은 많은 양의 트래픽을 수신하게 됩니다. 회사는 애플리케이션의
+로드가 증가함에 따라 클러스터의 스토리지 성능을 최적화하려고 합니다. 어떤 솔루션이
+이러한 요구 사항을 가장 비용 효율적으로 충족합니까?
+A. Aurora Standard 스토리지 구성을 사용하도록 클러스터를 구성합니다.
+B. 클러스터 스토리지 유형을 프로비저닝된 IOPS로 구성합니다.
+C. 클러스터 스토리지 유형을 범용으로 구성합니다.
+D. Aurora l/O-Optimized 스토리지 구성을 사용하도록 클러스터를 구성합니다.
+Answer: D
+Explanation:
+Aurora I/O-Optimized: This storage configuration is designed to provide consistent high
+performance for Aurora databases. It automatically scales IOPS as the workload increases,
+without needing to provision IOPS separately.
+Cost-Effectiveness: With Aurora I/O-Optimized, you only pay for the storage and I/O you use,
+making it a cost-effective solution for applications with varying and unpredictable I/O
+demands.
+Implementation:
+During the creation of the Aurora PostgreSQL Serverless v2 cluster, select the I/O-Optimized
+storage configuration.
+The storage system will automatically handle scaling and performance optimization based on
+the application load.
+Operational Efficiency: This configuration reduces the need for manual tuning and ensures
+optimal performance without additional administrative overhead.
+QUESTION NO: 10
+한 회사가 Amazon S3에 기밀 데이터를 저장할 준비를 하고 있습니다. 규정 준수를 위해 저장
+데이터는 암호화되어야 합니다. 암호화 키 사용은 감사 목적으로 기록되어야 합니다. 열쇠는
+매년 교체해야 합니다.
+이러한 요구 사항을 충족하고 운영상 가장 효율적인 솔루션은 무엇입니까?
+A. 고객 제공 키를 사용한 서버 측 암호화(SSE-C)
+B. Amazon S3 관리형 키(SSE-S3)를 사용한 서버 측 암호화
+C. 수동 교체를 통한 AWS KMS 키(SSE-KMS)를 사용한 서버 측 암호화
+D. 자동 교체 기능이 있는 AWS KMS 키(SSE-KMS)를 사용한 서버 측 암호화
+Answer: D
+Explanation:
+SSE-KMS: Server-side encryption with AWS Key Management Service (SSE-KMS) provides
+robust encryption of data at rest, integrated with AWS KMS for key management and
+auditing.
+Automatic Key Rotation: By enabling automatic rotation for the KMS keys, the system
+ensures that keys are rotated annually without manual intervention, meeting compliance
+requirements.
+Logging and Auditing: AWS KMS automatically logs all key usage and management actions
+in AWS CloudTrail, providing the necessary audit logs.
+Implementation:
+Create a KMS key with automatic rotation enabled.
+Configure the S3 bucket to use SSE-KMS with the created KMS key.
+Ensure CloudTrail is enabled for logging KMS key usage.
+Operational Efficiency: This solution provides encryption, automatic key management, and
+auditing in a seamless, fully managed way, reducing operational overhead
