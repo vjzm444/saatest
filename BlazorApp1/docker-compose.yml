@@ -1,0 +1,18 @@
+version: '3.9'
+
+services:      
+  appgw:
+    restart: always    
+    build: 
+      context: .
+      dockerfile: ./BlazorApp1/Dockerfile
+    ports:
+      - "5201:5201"
+    networks:
+      - appnetwork
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      
+networks:
+  appnetwork:
+    driver: bridge

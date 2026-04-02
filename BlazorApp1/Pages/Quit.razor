@@ -1,0 +1,125 @@
+﻿@page "/quiz"
+@using AppBase;
+@inject HttpClient Http
+@inject NavigationManager NavManager
+<div class="container mt-4">
+    <h3 class="mb-4 text-primary">SAA 실전 문제 (CSV 데이터 로드)</h3>
+
+    @if (questions == null)
+    {
+        <div class="text-center">
+            <div class="spinner-border" role="status"></div>
+            <p>CSV 파일에서 문제를 읽어오는 중...</p>
+        </div>
+    }
+    else
+    {
+        @foreach (var q in questions)
+        {
+            <div class="card mb-4 shadow-sm border-@(q.IsSubmitted ? (q.SelectedKey == q.CorrectKey ? "success" : "danger") : "secondary")">
+                <div class="card-body">
+                    <h5 class="card-title">Q@(q.Id). @q.Title</h5>
+
+                    <div class="list-group mt-3">
+                        @foreach (var opt in q.Options)
+                        {
+                            <label class="list-group-item @(GetOptionClass(q, opt.Key))">
+                                <input type="radio" name="question-@q.Id"
+                           value="@opt.Key"
+                           checked="@(q.SelectedKey == opt.Key)"
+                           @onchange="@(() => q.SelectedKey = opt.Key)"
+                           disabled="@q.IsSubmitted" />
+                                <span class="ms-2"><strong>@opt.Key.</strong> @opt.Value</span>
+                            </label>
+                        }
+                    </div>
+
+                    @if (q.IsSubmitted)
+                    {
+                        <div class="alert @(q.SelectedKey == q.CorrectKey ? "alert-success" : "alert-danger") mt-3">
+                            <p class="mb-0"><strong>💡 해설:</strong> @q.Explanation</p>
+                        </div>
+                    }
+
+                    <div class="mt-3">
+                        @if (!q.IsSubmitted)
+                        {
+                            <button class="btn btn-primary w-100" @onclick="() => q.IsSubmitted = true"
+                        disabled="@(string.IsNullOrEmpty(q.SelectedKey))">
+                                정답 확인
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-outline-secondary w-100" @onclick="() => ResetQuestion(q)">다시 풀기</button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    // 1. 데이터 모델 정의 (나중에 Entity Framework Core 엔티티로 확장 가능)
+    public class QuestionModel
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = "";
+        public Dictionary<string, string> Options { get; set; } = new();
+        public string CorrectKey { get; set; } = "";
+        public string Explanation { get; set; } = "";
+
+        // UI 상태 관리용 (DB에는 저장 안 함)
+        public string SelectedKey { get; set; } = "";
+        public bool IsSubmitted { get; set; } = false;
+    }
+
+    private List<QuestionModel>? questions;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        // CSV 파일 읽기 (wwwroot 기준 경로)
+        // CsvLoadTest.razor 내 수정
+        var absoluteUri = NavManager.ToAbsoluteUri("data/questions.csv").ToString();
+        var csvData = await Http.GetStringAsync(absoluteUri);
+        var lines = csvData.Split('\n').Skip(1); // 헤더 제외
+
+        questions = new List<QuestionModel>();
+
+        foreach (var line in lines)
+        {
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            var cols = line.Split(',');
+            questions.Add(new QuestionModel
+                {
+                    Id = int.Parse(cols[0]),
+                    Title = cols[1],
+                    Options = new Dictionary<string, string> {
+                    { "A", cols[2] }, { "B", cols[3] }, { "C", cols[4] }, { "D", cols[5] }
+                },
+                    CorrectKey = cols[6],
+                    Explanation = cols[7]
+                });
+        }
+        var logger = ConfigurationHelper.GetLogger<CsvLoadTest>();
+        logger.LogInformation($"갯수: {questions.Count()}");
+    }
+    
+    private void ResetQuestion(QuestionModel q)
+    {
+        q.SelectedKey = "";
+        q.IsSubmitted = false;
+    }
+
+    private string GetOptionClass(QuestionModel q, string key)
+    {
+        if (!q.IsSubmitted) return "";
+        if (key == q.CorrectKey) return "list-group-item-success";
+        if (q.SelectedKey == key && key != q.CorrectKey) return "list-group-item-danger";
+        return "";
+    }
+
+}

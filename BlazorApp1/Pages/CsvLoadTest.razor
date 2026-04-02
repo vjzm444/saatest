@@ -1,0 +1,69 @@
+﻿@page "/test"
+@using AppBase;
+@inject HttpClient Http
+@inject NavigationManager NavManager
+
+<h1>ddddd</h1>
+
+@code {
+    // 1. 데이터 모델 정의 (나중에 Entity Framework Core 엔티티로 확장 가능)
+    public class QuestionModel
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = "";
+        public Dictionary<string, string> Options { get; set; } = new();
+        public string CorrectKey { get; set; } = "";
+        public string Explanation { get; set; } = "";
+
+        // UI 상태 관리용 (DB에는 저장 안 함)
+        public string SelectedKey { get; set; } = "";
+        public bool IsSubmitted { get; set; } = false;
+    }
+
+    private List<QuestionModel>? questions;
+
+    private void ResetQuestion(QuestionModel q)
+    {
+        q.SelectedKey = "";
+        q.IsSubmitted = false;
+    }
+
+    private string GetOptionClass(QuestionModel q, string key)
+    {
+        if (!q.IsSubmitted) return "";
+        if (key == q.CorrectKey) return "list-group-item-success";
+        if (q.SelectedKey == key && key != q.CorrectKey) return "list-group-item-danger";
+        return "";
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        // CSV 파일 읽기 (wwwroot 기준 경로)
+        // CsvLoadTest.razor 내 수정
+        var absoluteUri = NavManager.ToAbsoluteUri("data/questions.csv").ToString();
+        var csvData = await Http.GetStringAsync(absoluteUri);
+        var lines = csvData.Split('\n').Skip(1); // 헤더 제외
+
+        questions = new List<QuestionModel>();
+
+        foreach (var line in lines)
+        {
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            var cols = line.Split(',');
+            questions.Add(new QuestionModel
+                {
+                    Id = int.Parse(cols[0]),
+                    Title = cols[1],
+                    Options = new Dictionary<string, string> {
+                    { "A", cols[2] }, { "B", cols[3] }, { "C", cols[4] }, { "D", cols[5] }
+                },
+                    CorrectKey = cols[6],
+                    Explanation = cols[7]
+                });
+        }
+        var logger = ConfigurationHelper.GetLogger<CsvLoadTest>();
+        logger.LogInformation($"갯수: {questions.Count()}");
+    }
+}
