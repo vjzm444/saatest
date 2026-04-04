@@ -51,6 +51,18 @@
             margin-right: 0 !important;
             width: 100%;
         }
+
+        /* 재연결 모달창(Attempting to reconnect...)을 완전히 숨김 */
+        #components-reconnect-modal {
+            display: none !important;
+        }
+
+        /* 연결 끊김 시 화면이 흐려지거나 클릭 막히는 오버레이 제거 */
+        .components-reconnect-show,
+        .components-reconnect-failed,
+        .components-reconnect-rejected {
+            display: none !important;
+        }
     </style>
 
     <component type="typeof(HeadOutlet)" render-mode="ServerPrerendered" />
@@ -71,11 +83,51 @@
 
     <script src="_framework/blazor.server.js"></script>
     <script>
+        
+        
         window.scrollToElement = (elementId) => {
             const element = document.getElementById(elementId);
             if (element) {
                 element.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
+        };
+
+        window.toggleAnswer = (element) => {
+            if (window.event) window.event.stopPropagation();
+
+            // 부모 카드를 찾아서 해설 섹션 타겟팅
+            const card = element.closest('.card-body') || element.parentElement.parentElement;
+            if (!card) return;
+
+            const answerDiv = card.querySelector('.answer-section');
+
+            if (answerDiv) {
+                // 현재 상태가 안 보이면 보여주고, 보이면 숨기기
+                if (answerDiv.style.display === 'none' || answerDiv.style.display === '') {
+                    answerDiv.style.setProperty('display', 'block', 'important');
+                    element.innerText = '해설 접기';
+                    element.classList.replace('btn-primary', 'btn-outline-secondary');
+                } else {
+                    answerDiv.style.setProperty('display', 'none', 'important');
+                    element.innerText = '정답 확인';
+                    element.classList.replace('btn-outline-secondary', 'btn-primary');
+                }
+            }
+        };
+
+        window.resetAnswers = () => {
+            // 1. 모든 해설 섹션을 다시 숨김
+            const sections = document.querySelectorAll('.answer-section');
+            sections.forEach(s => s.style.setProperty('display', 'none', 'important'));
+
+            // 2. 모든 버튼 텍스트와 스타일을 초기 상태로 복구
+            const buttons = document.querySelectorAll('.pure-js-btn');
+            buttons.forEach(b => {
+                b.innerText = '정답 확인';
+                b.classList.remove('btn-outline-secondary');
+                b.classList.add('btn-primary');
+                b.style.display = 'block';
+            });
         };
     </script>
 </body>

@@ -6,6 +6,8 @@ services:
     build: 
       context: .
       dockerfile: ./BlazorApp1/Dockerfile
+    environment:
+      - ASPNETCORE_URLS=http://+:5201  # 이 환경변수가 핵심!
     ports:
       - "5201:5201"
     networks:

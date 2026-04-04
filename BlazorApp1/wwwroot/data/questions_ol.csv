@@ -1,5 +1,0 @@
-Id,Title,OptionA,OptionB,OptionC,OptionD,CorrectKey,Explanation
-1,VPC에서 인터넷 연결을 위해 필요한 게이트웨이는?,NAT Gateway,Internet Gateway,Virtual Private Gateway,Transit Gateway,B,인터넷과 통신하려면 IGW가 반드시 필요합니다.
-2,장기 보관용으로 가장 저렴한 S3 서비스는?,S3 Standard,S3 Intelligent-Tiering,S3 Glacier Deep Archive,S3 One Zone-IA,C,Deep Archive는 비용이 가장 저렴하지만 복구 시간이 깁니다.
-3,여러 AZ에 걸쳐 배포하여 가용성을 높이는 서비스는?,EC2,RDS,S3,모든 서비스,D,AWS의 핵심 서비스들은 멀티 AZ 배포를 통해 고가용성을 유지합니다.
-4,회사의 소프트웨어 개발 팀에는 Amazon RDS 다중 AZ 클러스터가 필요합니다. RDS클러스터는 온프레미스에 배포된 데스크톱 클라이언트의 백엔드 역할을 합니다. 데스크톱클라이언트에는 RDS 클러스터에 대한 직접 연결이 필요합니다.회사는 개발팀이 사무실에 있을 때 클라이언트를 사용하여 클러스터에 연결할 수 있는 기능을제공해야 합니다, VPC 1개와 퍼블릭 서브넷 2개를 생성합니다. 퍼블릭 서브넷에 RDS 클러스터를생성합니다. 회사 사무실에서 고객 게이트웨이와 함께 AWS Site-to-Site VPN을사용하십시오, VPC와 프라이빗 서브넷 2개를 생성합니다. 프라이빗 서브넷에 RDS 클러스터를생성합니다. 회사 사무실에서 고객 게이트웨이와 함께 AWS Site-to-Site VPN을사용하십시오,VPC와 프라이빗 서브넷 2개를 생성합니다. 프라이빗 서브넷에 RDS 클러스터를생성합니다. RDS 보안 그룹을 사용하여 회사의 사무실 IP 범위가 클러스터에 액세스하도록허용합니다, VPC 1개와 퍼블릭 서브넷 2개를 생성합니다. 퍼블릭 서브넷에 RDS 클러스터를생성합니다. 각 개발자에 대해 클러스터 사용자를 만듭니다. RDS 보안 그룹을 사용하여사용자가 클러스터에 액세스하도록 허용합니다,B,...

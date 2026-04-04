@@ -5,15 +5,27 @@
 @inject IJSRuntime JSRuntime
 
 <div class="container-fluid mt-4">
-    @* 상단 컨트롤 바: 사이드바 토글 및 5번 이동 버튼 *@
+    @* 상단 컨트롤 바 *@
     <div class="d-flex justify-content-between align-items-center mb-4 sticky-top bg-white py-2 shadow-sm px-3" style="z-index: 1020; top: 0;">
-        <h3 class="mb-0 text-primary">SAA 실전 문제</h3>
-        <div class="d-flex align-items-center">
-            @* 문제 번호 입력창 *@
-            <div class="input-group" style="width: 200px;">
-                <input type="number" class="form-control" placeholder="문제 번호" 
+        <h3 class="mb-0 text-primary">SAA 실전 문제 (@currentPage / @TotalPages Page)</h3>
+
+        <div class="d-flex align-items-center gap-2">
+            @* 셔플 버튼 추가 *@
+            <button class="btn btn-warning btn-sm me-2" @onclick="ShuffleQuestions">
+                <i class="bi bi-shuffle"></i> 문제 섞기
+            </button>
+
+            @* 페이지 이동 컨트롤 *@
+            <div class="btn-group me-3">
+                <button class="btn btn-outline-secondary btn-sm" disabled="@(currentPage == 1)" @onclick="() => ChangePage(currentPage - 1)">이전</button>
+                <button class="btn btn-outline-secondary btn-sm" disabled="@(currentPage == TotalPages)" @onclick="() => ChangePage(currentPage + 1)">다음</button>
+            </div>
+
+            @* 특정 문제 번호로 점프 *@
+            <div class="input-group" style="width: 180px;">
+                <input type="number" class="form-control form-control-sm" placeholder="Q 번호"
                        @bind="jumpTarget" @onkeyup="HandleKeyUp" />
-                <button class="btn btn-primary" @onclick="JumpToQuestion">이동</button>
+                <button class="btn btn-primary btn-sm" @onclick="JumpToQuestion">이동</button>
             </div>
         </div>
     </div>
@@ -22,81 +34,170 @@
     {
         <div class="text-center">
             <div class="spinner-border" role="status"></div>
-            <p>CSV 파일에서 문제를 읽어오는 중...</p>
+            <p>CSV 파일에서 1,000개의 문제를 읽어오는 중...</p>
         </div>
     }
     else
     {
-        int listCount = 1;
-        @foreach (var q in questions)
+        @* 페이징된 데이터만 출력 *@
+        @foreach (var q in PagedQuestions)
         {
-            @* 각 문제 카드에 ID 부여 *@
-            <div id="question-@listCount" class="card mb-4 shadow-sm border-@(q.IsSubmitted ? (q.SelectedKey == q.CorrectKey ? "success" : "danger") : "secondary")">
+            <div id="question-@q.Id" class="card mb-4 shadow-sm border-secondary">
                 <div class="card-body">
                     <h5 class="card-title">Q@(q.Id). @q.Title</h5>
 
                     <div class="list-group mt-3">
                         @foreach (var opt in q.Options)
                         {
-                            <label class="list-group-item @(GetOptionClass(q, opt.Key))">
-                                <input type="radio" name="question-@q.Id"
-                           value="@opt.Key"
-                           checked="@(q.SelectedKey == opt.Key)"
-                           @onchange="@(() => q.SelectedKey = opt.Key)"
-                           disabled="@q.IsSubmitted" />
-                                <span class="ms-2"><strong>@opt.Key.</strong> @opt.Value</span>
+                            <label class="list-group-item d-flex justify-content-between align-items-start" style="cursor: pointer; min-height: 50px;">
+                                <div class="flex-grow-1 me-3">
+                                    <span class="fw-bold">@opt.Key.</span> @opt.Value
+                                </div>
+
+                                @* 핵심: flex-shrink-0(안 찌그러지게), align-self-start(위로 고정) *@
+                                <input type="radio"
+                                       name="question-@q.Id"
+                                       class="form-check-input flex-shrink-0 mt-1"
+                                       style="width: 1.25rem; height: 1.25rem; align-self: start;"
+                                       checked="@(q.SelectedKey == opt.Key)"
+                                       @onchange="@(() => q.SelectedKey = opt.Key)" />
                             </label>
                         }
                     </div>
 
-                    @if (q.IsSubmitted)
-                    {
-                        <div class="alert @(q.SelectedKey == q.CorrectKey ? "alert-success" : "alert-danger") mt-3">
-                            <p class="mb-0"><strong>💡 해설:</strong> @q.Explanation</p>
-                        </div>
-                    }
-
+                    @* 오프라인 생존형 버튼 (onclick 사용) *@
                     <div class="mt-3">
-                        @if (!q.IsSubmitted)
-                        {
-                            <button class="btn btn-primary w-100" @onclick="() => q.IsSubmitted = true"
-                        disabled="@(string.IsNullOrEmpty(q.SelectedKey))">
-                                정답 확인
-                            </button>
-                        }
-                        else
-                        {
-                            <button class="btn btn-outline-secondary w-100" @onclick="() => ResetQuestion(q)">다시 풀기</button>
-                        }
+                        <div class="pure-js-btn btn btn-primary w-100"
+                             onclick="toggleAnswer(this)"
+                             style="cursor: pointer;">
+                            정답 확인
+                        </div>
+                    </div>
+
+                    @* 해설 섹션 *@
+                    <div class="answer-section" style="display: none;">
+                        <hr />
+                        <div class="alert alert-info">
+                            <strong>정답: @q.CorrectKey</strong><br />
+                            @q.Explanation
+                        </div>
                     </div>
                 </div>
             </div>
-            listCount++;
         }
+
+        @* 하단 페이지네이션 *@
+        <div class="d-flex justify-content-center mt-4 mb-5">
+            <div class="btn-group">
+                @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(TotalPages, currentPage + 2); i++)
+                {
+                    int pageNum = i;
+                    <button class="btn @(currentPage == pageNum ? "btn-primary" : "btn-outline-primary")"
+                            @onclick="() => ChangePage(pageNum)">
+                        @pageNum
+                    </button>
+                }
+            </div>
+        </div>
     }
 </div>
 
 @code {
+    private List<QuestionModel>? questions;
+    private int jumpTarget;
 
-    private int jumpTarget; // 입력받은 문제 번호
+    // 페이징 설정
+    private int currentPage = 1;
+    private int pageSize = 50;
 
-    // 엔터키 누르면 바로 이동하게 처리
+    // LINQ로 현재 페이지 데이터 슬라이싱
+    private IEnumerable<QuestionModel> PagedQuestions =>
+        questions?.Skip((currentPage - 1) * pageSize).Take(pageSize) ?? Enumerable.Empty<QuestionModel>();
+
+    private int TotalPages => questions == null ? 0 : (int)Math.Ceiling((double)questions.Count / pageSize);
+
+    private async Task ChangePage(int page)
+    {
+        currentPage = Math.Clamp(page, 1, TotalPages);
+
+        // 페이지 바뀔 때 JS 호출해서 UI 싹 닫기
+        await JSRuntime.InvokeVoidAsync("resetAnswers");
+
+        // 스크롤도 맨 위로
+        await JSRuntime.InvokeVoidAsync("window.scrollTo", 0, 0);
+
+        StateHasChanged();
+    }
+
     private async Task HandleKeyUp(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter")
+        if (e.Key == "Enter") await JumpToQuestion();
+    }
+
+    private async Task JumpToQuestion()
+    {
+        if (questions == null || jumpTarget <= 0) return;
+
+        // 1. 해당 문제가 속한 페이지 계산
+        int targetPage = (int)Math.Ceiling((double)jumpTarget / pageSize);
+
+        // 2. 페이지 이동
+        if (currentPage != targetPage)
         {
-            await JumpToQuestion();
+            currentPage = targetPage;
+            StateHasChanged(); // UI 강제 갱신
+            await Task.Delay(100); // 렌더링 시간 확보
+        }
+
+        // 3. 해당 요소로 스크롤
+        await JSRuntime.InvokeVoidAsync("scrollToElement", $"question-{jumpTarget}");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var absoluteUri = NavManager.ToAbsoluteUri("data/questions2.csv").ToString();
+            var csvData = await Http.GetStringAsync(absoluteUri);
+            var lines = csvData.Split('\n').Skip(1);
+
+            questions = new List<QuestionModel>();
+            foreach (var line in lines)
+            {
+                if (string.IsNullOrWhiteSpace(line)) continue;
+                var cols = line.Split(',');
+                if (cols.Length < 8) continue;
+
+                questions.Add(new QuestionModel
+                {
+                    Id = int.Parse(cols[0]),
+                    Title = cols[1],
+                    Options = new Dictionary<string, string> {
+                        { "A", cols[2] }, { "B", cols[3] }, { "C", cols[4] }, { "D", cols[5] }
+                    },
+                    CorrectKey = cols[6].Trim(),
+                    Explanation = cols[7]
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"CSV 로딩 실패: {ex.Message}");
         }
     }
 
-    // 입력된 번호로 스크롤 이동
-    private async Task JumpToQuestion()
+    private void ShuffleQuestions()
     {
-        if (jumpTarget > 0)
-        {
-            // 리스트 카운트 기반 ID: "question-5" 형식으로 호출
-            await JSRuntime.InvokeVoidAsync("scrollToElement", $"question-{jumpTarget}");
-        }
+        if (questions == null || !questions.Any()) return;
+
+        // 8년 차의 깔끔한 셔플 로직 (LINQ 활용)
+        var rnd = new Random();
+        questions = questions.OrderBy(x => rnd.Next()).ToList();
+
+        // 섞은 후에는 1페이지로 이동하고 상태 갱신
+        currentPage = 1;
+        StateHasChanged();
+        JSRuntime.InvokeVoidAsync("window.scrollTo", 0, 0);
     }
 
     public class QuestionModel
@@ -108,52 +209,5 @@
         public string Explanation { get; set; } = "";
         public string SelectedKey { get; set; } = "";
         public bool IsSubmitted { get; set; } = false;
-    }
-
-    private List<QuestionModel>? questions;
-
-    protected override async Task OnInitializedAsync()
-    {
-        var absoluteUri = NavManager.ToAbsoluteUri("data/questions.csv").ToString();
-        var csvData = await Http.GetStringAsync(absoluteUri);
-        var lines = csvData.Split('\n').Skip(1);
-
-        questions = new List<QuestionModel>();
-
-        foreach (var line in lines)
-        {
-            if (string.IsNullOrWhiteSpace(line)) continue;
-
-            // 파이썬에서 따옴표 없이 추출했으므로 단순 Split 가능
-            var cols = line.Split(',');
-            if (cols.Length < 8) continue;
-
-            questions.Add(new QuestionModel
-                {
-                    Id = int.Parse(cols[0]),
-                    Title = cols[1],
-                    Options = new Dictionary<string, string> {
-                    { "A", cols[2] }, { "B", cols[3] }, { "C", cols[4] }, { "D", cols[5] }
-                },
-                    CorrectKey = cols[6].Trim(), // CorrectKey 한 글자만 추출
-                    Explanation = cols[7]
-                });
-        }
-    }
-
-    // 스크롤 이동 함수 (JS 호출)
-    private async Task ScrollToQuestion(string elementId)
-    {
-        await JSRuntime.InvokeVoidAsync("scrollToElement", elementId);
-    }
-
-    private void ResetQuestion(QuestionModel q) => (q.SelectedKey, q.IsSubmitted) = ("", false);
-
-    private string GetOptionClass(QuestionModel q, string key)
-    {
-        if (!q.IsSubmitted) return "";
-        if (key == q.CorrectKey) return "list-group-item-success";
-        if (q.SelectedKey == key && key != q.CorrectKey) return "list-group-item-danger";
-        return "";
     }
 }
