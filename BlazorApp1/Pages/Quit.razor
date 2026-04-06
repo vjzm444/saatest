@@ -1,8 +1,11 @@
 ﻿@page "/quiz"
 @using AppBase;
+@using AppBase.Redis;
 @inject HttpClient Http
 @inject NavigationManager NavManager
 @inject IJSRuntime JSRuntime
+@inject RedisDatabase redisDatabase
+
 
 <div class="container-fluid mt-4">
     @* 상단 컨트롤 바 *@
@@ -97,8 +100,15 @@
                         @pageNum
                     </button>
                 }
+
             </div>
+            
+            <button class="btn btn-danger btn-sm" @onclick="SaveWrongQuestions">
+                <i class="bi bi-bug"></i> 틀린 문제 저장
+            </button>
+
         </div>
+
     }
 </div>
 
@@ -186,6 +196,7 @@
         }
     }
 
+    //문제셔플
     private void ShuffleQuestions()
     {
         if (questions == null || !questions.Any()) return;
@@ -198,6 +209,49 @@
         currentPage = 1;
         StateHasChanged();
         JSRuntime.InvokeVoidAsync("window.scrollTo", 0, 0);
+    }
+
+    private async Task SaveWrongQuestions()
+    {
+        if (questions == null) return;
+
+        // 1. 틀린 문제만 필터링 (선택을 했고 + 정답과 다른 경우)
+        var wrongQuestions = questions
+            .Where(q => !string.IsNullOrEmpty(q.SelectedKey) && q.SelectedKey != q.CorrectKey)
+            .ToList();
+
+        if (!wrongQuestions.Any())
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "저장할 틀린 문제가 없습니다!");
+            return;
+        }
+
+        try
+        {
+            // 2. Redis 서비스 가져오기 (Blazor Server 기준 inject 혹은 의존성 주입 확인)
+            // 만약 OnInitialized에서 가져온다면 해당 변수를 사용해.
+        
+
+            RedisDatabaseWrapper redisDb = redisDatabase!.GetDatabase();
+        
+            if (redisDb == null) return;
+
+            foreach (var q in wrongQuestions)
+            {
+                // 3. Key는 Q50 형식, Value는 +1 (Incr)
+                string redisKey = $"Q{q.Id}";
+            
+                await redisDb.StringIncrementAsync(redisKey, 1); // 1씩 증가
+            }
+
+            await JSRuntime.InvokeVoidAsync("alert", $"{wrongQuestions.Count}개의 틀린 문제를 Redis에 저장(누적)했습니다!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Redis 저장 실패: {ex.Message}");
+            await JSRuntime.InvokeVoidAsync("alert", "Redis 저장 중 오류가 발생했습니다.");
+        }
+
     }
 
     public class QuestionModel

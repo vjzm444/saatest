@@ -1,0 +1,136 @@
+﻿@page "/wrong-questions"
+@using AppBase
+@using AppBase.Redis;
+
+@inject HttpClient Http
+@inject NavigationManager NavManager
+@inject IServiceProvider ServiceProvider
+@inject RedisDatabase redisDatabase
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 sticky-top bg-white py-2 shadow-sm px-3" style="z-index: 1020; top: 0;">
+        <h3 class="mb-0 text-danger"><i class="bi bi-fire"></i> 오답 집중 공략 (@questions?.Count 문제)</h3>
+        <button class="btn btn-outline-secondary btn-sm" @onclick='() => NavManager.NavigateTo("/quiz")'>메인 퀴즈로 돌아가기</button>
+    </div>
+
+    @if (questions == null)
+    {
+        <div class="text-center">
+            <div class="spinner-border text-danger" role="status"></div>
+            <p>오답 데이터를 분석하고 있습니다...</p>
+        </div>
+    }
+    else if (!questions.Any())
+    {
+        <div class="alert alert-success">틀린 문제가 하나도 없네요! 완벽합니다. 👍</div>
+    }
+    else
+    {
+        @foreach (var q in questions)
+        {
+            <div id="question-@q.Id" class="card mb-4 shadow-sm border-danger">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Q@(q.Id). @q.Title</h5>
+                    @* 누적 횟수 표시 *@
+                    <span class="badge bg-danger p-2">오답 누적: @q.WrongCount 회</span>
+                </div>
+                <div class="card-body">
+                    <div class="list-group mt-3">
+                        @foreach (var opt in q.Options)
+                        {
+                            <label class="list-group-item d-flex justify-content-between align-items-start" style="cursor: pointer;">
+                                <div class="flex-grow-1 me-3">
+                                    <span class="fw-bold">@opt.Key.</span> @opt.Value
+                                </div>
+                                <input type="radio" name="question-@q.Id" class="form-check-input flex-shrink-0 mt-1"
+                           checked="@(q.SelectedKey == opt.Key)"
+                           @onchange="@(() => q.SelectedKey = opt.Key)" />
+                            </label>
+                        }
+                    </div>
+
+                    <div class="mt-3">
+                        <div class="btn btn-danger w-100" onclick="toggleAnswer(this)">정답 및 해설 확인</div>
+                    </div>
+
+                    <div class="answer-section" style="display: none;">
+                        <hr />
+                        <div class="alert alert-warning">
+                            <strong class="text-danger">정답: @q.CorrectKey</strong><br />
+                            @q.Explanation
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private List<QuestionModel>? questions;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // 1. Redis 서비스 가져오기
+            var db = redisDatabase?.GetDatabase();
+            if (db == null) return;
+
+            // 2. CSV 읽기
+            var absoluteUri = NavManager.ToAbsoluteUri("data/questions2.csv").ToString();
+            var csvData = await Http.GetStringAsync(absoluteUri);
+            var lines = csvData.Split('\n').Skip(1);
+
+            questions = new List<QuestionModel>();
+
+            foreach (var line in lines)
+            {
+                if (string.IsNullOrWhiteSpace(line)) continue;
+                var cols = line.Split(',');
+                if (cols.Length < 8) continue;
+
+                int id = int.Parse(cols[0]);
+                string redisKey = $"Q{id}";
+
+                // 3. Redis에서 횟수 확인
+                var redisValue = await db.StringGetAsync(redisKey);
+
+                if (!string.IsNullOrEmpty(redisValue)) // 틀린 기록이 있는 경우만 리스트에 추가
+                {
+                    questions.Add(new QuestionModel
+                        {
+                            Id = id,
+                            Title = cols[1],
+                            Options = new Dictionary<string, string> {
+                            { "A", cols[2] }, { "B", cols[3] }, { "C", cols[4] }, { "D", cols[5] }
+                        },
+                            CorrectKey = cols[6].Trim(),
+                            Explanation = cols[7],
+                            WrongCount = Convert.ToInt32(redisValue) // 횟수 저장
+                        });
+                }
+            }
+
+            // 4. 많이 틀린 순서대로 정렬 (8년 차의 효율적 복습법)
+            questions = questions.OrderByDescending(x => x.WrongCount).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"오답 데이터 로드 실패: {ex.Message}");
+        }
+    }
+
+    // 형식을 똑같이 맞춘 QuestionModel
+    public class QuestionModel
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = "";
+        public Dictionary<string, string> Options { get; set; } = new();
+        public string CorrectKey { get; set; } = "";
+        public string Explanation { get; set; } = "";
+        public string SelectedKey { get; set; } = "";
+        public bool IsSubmitted { get; set; } = false;
+        public int WrongCount { get; set; } // 횟수 필드만 추가!
+    }
+}
