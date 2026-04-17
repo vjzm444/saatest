@@ -59,11 +59,11 @@
 
                                 @* 핵심: flex-shrink-0(안 찌그러지게), align-self-start(위로 고정) *@
                                 <input type="radio"
-                                       name="question-@q.Id"
-                                       class="form-check-input flex-shrink-0 mt-1"
-                                       style="width: 1.25rem; height: 1.25rem; align-self: start;"
-                                       checked="@(q.SelectedKey == opt.Key)"
-                                       @onchange="@(() => q.SelectedKey = opt.Key)" />
+                                   name="question-@q.Id"
+                                   class="form-check-input flex-shrink-0 mt-1"
+                                   style="width: 1.25rem; height: 1.25rem; align-self: start;"
+                                   checked="@(q.SelectedKey == opt.Key)"
+                                   onclick="saveAnswer(@q.Id, '@opt.Key')" />
                             </label>
                         }
                     </div>
@@ -106,7 +106,9 @@
             <button class="btn btn-danger btn-sm" @onclick="SaveWrongQuestions">
                 <i class="bi bi-bug"></i> 틀린 문제 저장
             </button>
-
+            <button class="btn btn-secondary btn-sm ms-2" @onclick="ResetAll">
+                <i class="bi bi-trash"></i> 리셋하기
+            </button>
         </div>
 
     }
@@ -126,6 +128,69 @@
 
     private int TotalPages => questions == null ? 0 : (int)Math.Ceiling((double)questions.Count / pageSize);
 
+
+    //CSV를 읽어들인다
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var absoluteUri = NavManager.ToAbsoluteUri("data/questions2.csv").ToString();
+            var csvData = await Http.GetStringAsync(absoluteUri);
+            var lines = csvData.Split('\n').Skip(1);
+
+            questions = new List<QuestionModel>();
+            foreach (var line in lines)
+            {
+                if (string.IsNullOrWhiteSpace(line)) continue;
+                var cols = line.Split(',');
+                if (cols.Length < 8) continue;
+
+                questions.Add(new QuestionModel
+                    {
+                        Id = int.Parse(cols[0]),
+                        Title = cols[1],
+                        Options = new Dictionary<string, string> {
+                        { "A", cols[2] }, { "B", cols[3] }, { "C", cols[4] }, { "D", cols[5] }
+                    },
+                        CorrectKey = cols[6].Trim(),
+                        Explanation = cols[7]
+                    });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"CSV 로딩 실패: {ex.Message}");
+        }
+    }
+
+    
+    private bool _loadedFromStorage = false;
+    //브라우저 스토리지에 풀다만것들을 조회한다
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_loadedFromStorage && questions != null)
+        {
+            _loadedFromStorage = true;
+
+            var savedAnswers = await JSRuntime.InvokeAsync<Dictionary<string, string>>("quizStorage.loadAnswers");
+
+            Console.WriteLine("🔥 LOAD FROM STORAGE 실행됨");
+
+            if (savedAnswers != null)
+            {
+                foreach (var q in questions)
+                {
+                    if (savedAnswers.TryGetValue(q.Id.ToString(), out var savedKey))
+                    {
+                        q.SelectedKey = savedKey;
+                    }
+                }
+            }
+
+            StateHasChanged();
+        }
+    }
+
     private async Task ChangePage(int page)
     {
         currentPage = Math.Clamp(page, 1, TotalPages);
@@ -137,6 +202,15 @@
         await JSRuntime.InvokeVoidAsync("window.scrollTo", 0, 0);
 
         StateHasChanged();
+    }
+
+    //문제를 고를때마다 브라우저 스토리지에 저장된다
+    private async Task OnSelectAnswer(QuestionModel q, string key)
+    {
+        q.SelectedKey = key;
+
+        // 👉 여기서 JS 호출해야 저장됨
+        await JSRuntime.InvokeVoidAsync("quizStorage.saveAnswer", q.Id, key);
     }
 
     private async Task HandleKeyUp(KeyboardEventArgs e)
@@ -163,38 +237,26 @@
         await JSRuntime.InvokeVoidAsync("scrollToElement", $"question-{jumpTarget}");
     }
 
-    protected override async Task OnInitializedAsync()
+    private async Task ResetAll()
     {
-        try
+        // 1. localStorage 삭제
+        await JSRuntime.InvokeVoidAsync("clearQuizStorage");
+
+        // 2. UI 초기화 (해설 접기)
+        await JSRuntime.InvokeVoidAsync("resetAnswers");
+
+        // 3. Blazor 상태 초기화
+        if (questions != null)
         {
-            var absoluteUri = NavManager.ToAbsoluteUri("data/questions2.csv").ToString();
-            var csvData = await Http.GetStringAsync(absoluteUri);
-            var lines = csvData.Split('\n').Skip(1);
-
-            questions = new List<QuestionModel>();
-            foreach (var line in lines)
+            foreach (var q in questions)
             {
-                if (string.IsNullOrWhiteSpace(line)) continue;
-                var cols = line.Split(',');
-                if (cols.Length < 8) continue;
-
-                questions.Add(new QuestionModel
-                {
-                    Id = int.Parse(cols[0]),
-                    Title = cols[1],
-                    Options = new Dictionary<string, string> {
-                        { "A", cols[2] }, { "B", cols[3] }, { "C", cols[4] }, { "D", cols[5] }
-                    },
-                    CorrectKey = cols[6].Trim(),
-                    Explanation = cols[7]
-                });
+                q.SelectedKey = "";
             }
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"CSV 로딩 실패: {ex.Message}");
-        }
+
+        StateHasChanged();
     }
+
 
     //문제셔플
     private void ShuffleQuestions()

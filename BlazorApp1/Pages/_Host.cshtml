@@ -129,6 +129,51 @@
                 b.style.display = 'block';
             });
         };
+
+        window.clearQuizStorage = function () {
+            localStorage.removeItem("quizAnswers");
+
+            console.log("[CLEAR] quizAnswers 삭제됨");
+        };
+
+
+        //문제저장(오프라인 브라우저딴에서)
+        window.quizStorage = {
+            saveAnswer: function (questionId, selectedKey) {
+                const data = JSON.parse(localStorage.getItem("quizAnswers") || "{}");
+
+                data[questionId] = selectedKey;
+
+                localStorage.setItem("quizAnswers", JSON.stringify(data));
+
+                // ✅ 콘솔 로그
+                console.log("[SAVE]", "Q" + questionId, "=>", selectedKey);
+                console.log("[CURRENT STORAGE]", data);
+            },
+
+            loadAnswers: function () {
+                const data = JSON.parse(localStorage.getItem("quizAnswers") || "{}");
+
+                console.log("[LOAD]", data);
+
+                return data;
+            },
+
+            clearAnswers: function () {
+                localStorage.removeItem("quizAnswers");
+                console.log("[CLEAR] 모든 데이터 삭제됨");
+            }
+        };
+
+        window.saveAnswer = function (questionId, selectedKey) {
+            const data = JSON.parse(localStorage.getItem("quizAnswers") || "{}");
+
+            data[questionId] = selectedKey;
+
+            localStorage.setItem("quizAnswers", JSON.stringify(data));
+
+            console.log("[JS SAVE - OFFLINE OK]", "Q" + questionId, "=>", selectedKey);
+        };
     </script>
 </body>
 </html>
